@@ -38,7 +38,6 @@
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 html:not(.no-smooth){scroll-behavior:smooth}
-@media (max-width:900px),(hover:none) and (pointer:coarse){html:not(.no-smooth){scroll-behavior:auto}}
 body{
   margin:0;
   background:var(--bg);
@@ -803,40 +802,20 @@ body.no-motion .poem-body .pline{opacity:1;transform:none;transition-delay:0s !i
 b.term{white-space:normal}
 
 
-/* ---------- mobile / touch: drop the effects that make phones stutter ---------- */
+/* ---------- phones & touch screens: lazy rendering ----------
+   The page is ~1,000,000px tall on a phone. Off-screen sections are skipped by
+   the renderer until you scroll near them (content-visibility), and the
+   costliest ambient effects are dropped, so long jumps no longer freeze. */
 @media (max-width:900px),(hover:none) and (pointer:coarse){
-  html{-webkit-text-size-adjust:100%;overflow-x:hidden}
-  body{overflow-x:clip}
+  html:not(.no-smooth){scroll-behavior:auto}
+  html{overflow-anchor:none}
+  .sub{content-visibility:auto;contain-intrinsic-size:auto 3000px}
   .grain{display:none}
-  .hero-aurora{filter:blur(40px);opacity:.4}
-  .hero-aurora i{mix-blend-mode:normal}
-  .cover-bg::before{filter:none;transform:none;opacity:.7}
-  .cover-glyph{transform:none;translate:0 -50%;right:-8vw;font-size:min(40vh,70vw)}
-  [data-reveal]{filter:none;transform:translateY(14px);transition:opacity .5s ease,transform .6s var(--ease)}
-  [data-reveal].is-in{transform:none}
-  .mask>span{transition:transform .7s var(--ease),opacity .5s ease}
-  .chapter-cover{min-height:auto;padding-block:clamp(72px,12vh,110px)}
-  .chapter-nav,.motion-toggle{-webkit-backdrop-filter:none;backdrop-filter:none}
-  .chapter-nav{background:rgba(11,10,14,.96)}
-  .motion-toggle{bottom:calc(14px + env(safe-area-inset-bottom));background:rgba(14,13,19,.95)}
-  .cn-links{-webkit-mask-image:linear-gradient(90deg,#000 92%,transparent)}
-  .poem-body .pline{transform:none}
-  .pline.is-active,.poem-card.is-in .pline.is-active{transform:none}
+  [data-reveal]{filter:none}
 }
-
-/* ---------- phones: one chapter in the DOM flow at a time ----------
-   The full page is ~1,000,000px tall on a phone; jumping to a chapter froze
-   and crashed the tab. Only the open chapter is rendered. */
-@media (max-width:900px),(hover:none) and (pointer:coarse){
-  .poem-chapter{display:none}
-  .poem-chapter.is-current{display:block}
-  .ch-pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
-    padding:36px var(--pad) 72px;border-top:1px solid var(--hair-soft)}
-  .ch-pager a{color:var(--ink);text-decoration:none;font-family:var(--mono);font-size:.72rem;
-    letter-spacing:.14em;text-transform:uppercase;padding:14px 18px;border-radius:100px;
-    border:1px solid var(--hair-soft);background:var(--surface)}
-  .ch-pager a:last-child{border-color:var(--accent);color:var(--accent)}
-}
+/* hero animations pause once the hero is off-screen: otherwise they force a
+   repaint every frame for the whole visit */
+.hero.is-off .hero-aurora i,.hero.is-off .hero-em,.hero.is-off .scroll-cue i{animation-play-state:paused}
 </style>
 </head>
 <body>
@@ -4897,6 +4876,83 @@ b.term{white-space:normal}
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+  /* Phones / touch screens: sections render lazily (see .sub CSS). */
+  var lite = window.matchMedia('(max-width:900px), (hover:none) and (pointer:coarse)');
+
+  /* Opening the site always starts at the top: no restored mid-page scroll,
+     no stale #fragment dropping you into the middle of a poem. */
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  var hadHash = !!location.hash;
+  if (hadHash) history.replaceState(null, '', location.pathname + location.search);
+  window.addEventListener('load', function () { if (hadHash) window.scrollTo(0, 0); });
+
+  if (lite.matches) {
+    /* Give each not-yet-rendered section a size close to its real one, so the
+       page length and jump targets are right before anything is drawn. */
+    var vw = document.documentElement.clientWidth || 390;
+    $$('.sub').forEach(function (s) {
+      var chars = s.textContent.length;
+      var blocks = s.querySelectorAll('p,li,h3,h4,tr,.pline,.step,blockquote').length;
+      var est = Math.round(chars * 250 / vw + blocks * 19.5 + 840);
+      s.style.containIntrinsicSize = 'auto ' + est + 'px';
+    });
+
+    /* When a section above the viewport renders and its height changes,
+       shift the scroll so nothing on screen moves. Done by hand because Safari
+       has no scroll anchoring and Chrome's mis-anchors on this page. */
+    if (window.ResizeObserver) {
+      var lastH = new WeakMap();
+      var anchorRO = new ResizeObserver(function (entries) {
+        var shift = 0;
+        entries.forEach(function (e) {
+          var h = e.target.offsetHeight, prev = lastH.get(e.target);
+          lastH.set(e.target, h);
+          if (prev === undefined || prev === h) return;
+          var r = e.target.getBoundingClientRect();
+          if (r.bottom - (h - prev) <= 0) shift += h - prev;
+        });
+        if (shift) window.scrollBy(0, shift);
+      });
+      $$('.sub').forEach(function (s) { anchorRO.observe(s); });
+    }
+  }
+
+  var heroEl = $('.hero');
+  if (heroEl && window.IntersectionObserver) {
+    new IntersectionObserver(function (entries) {
+      heroEl.classList.toggle('is-off', !entries[0].isIntersecting);
+    }).observe(heroEl);
+  }
+
+  /* Jump to a section. On phones an animated scroll would drag the renderer
+     through the whole page, so jump straight there, then hold the position
+     while the sections around it finish rendering. */
+  function jumpTo(el) {
+    if (!el) return;
+    if (!lite.matches) {
+      el.scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
+      return;
+    }
+    el.scrollIntoView({ behavior: 'auto', block: 'start' });
+    var want = el.getBoundingClientRect().top;
+    var until = performance.now() + 1500, stopped = false;
+    var events = ['touchstart', 'wheel', 'keydown'];
+    function stop() { stopped = true; }
+    events.forEach(function (t) { window.addEventListener(t, stop, { passive: true }); });
+    (function hold() {
+      if (stopped || performance.now() > until) {
+        events.forEach(function (t) { window.removeEventListener(t, stop); });
+        return;
+      }
+      var t = el.getBoundingClientRect().top;
+      if (Math.abs(t - want) > 2) {
+        el.scrollIntoView({ behavior: 'auto', block: 'start' });
+        want = el.getBoundingClientRect().top;
+      }
+      requestAnimationFrame(hold);
+    })();
+  }
+
   /* ---------------------------------------------------- reveal on scroll */
   var revealObserver = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) {
@@ -4922,9 +4978,22 @@ b.term{white-space:normal}
     if (!pending.length) return;
     var h = window.innerHeight;
     var still = [];
+    var near = new Map();
     for (var i = 0; i < pending.length; i++) {
       var el = pending[i];
       if (el.classList.contains('is-in')) continue;
+      /* Measuring an element inside a lazily-skipped section would force the
+         whole section to render, so check the section first. */
+      if (el._sub === undefined) el._sub = el.closest('.sub');
+      if (el._sub) {
+        var ok = near.get(el._sub);
+        if (ok === undefined) {
+          var br = el._sub.getBoundingClientRect();
+          ok = br.bottom > -200 && br.top < h + 300;
+          near.set(el._sub, ok);
+        }
+        if (!ok) { still.push(el); continue; }
+      }
       var r = el.getBoundingClientRect();
       if (r.bottom > -200 && r.top < h + 300) {
         el.classList.add('is-in');
@@ -4936,7 +5005,6 @@ b.term{white-space:normal}
     pending = still;
   }
   window.addEventListener('hashchange', function () { setTimeout(revealNow, 60); });
-  if (location.hash) setTimeout(revealNow, 120);
 
   /* masked line reveals: hero fires immediately, covers on entry */
   var maskObserver = new IntersectionObserver(function (entries) {
@@ -5012,7 +5080,7 @@ b.term{white-space:normal}
       });
       document.documentElement.style.setProperty('--live-accent', accent || '#d8c6a4');
 
-      if (!document.body.classList.contains('no-motion') && !reduced.matches) {
+      if (!document.body.classList.contains('no-motion') && !reduced.matches && !lite.matches) {
         covers.forEach(function (c) {
           var r = c.getBoundingClientRect();
           if (r.bottom < -200 || r.top > window.innerHeight + 200) return;
@@ -5267,8 +5335,7 @@ b.term{white-space:normal}
     if (!m) return;
     closePalette();
     var el = document.getElementById(m.id);
-    activateChapter(el);
-    if (el) el.scrollIntoView({ behavior: jumpBehavior(), block: 'start' });
+    jumpTo(el);
     if (m.kind === 'term' && gSearch) {
       gSearch.value = m.title;
       applyGlossary();
@@ -5317,37 +5384,6 @@ b.term{white-space:normal}
     if (off) $$('[data-reveal]').forEach(function (el) { el.classList.add('is-in'); });
   });
 
-  /* The page is hundreds of thousands of px tall; animating a scroll across it
-     freezes phones. Touch / small screens jump instantly instead. */
-  var noSmooth = window.matchMedia('(max-width:900px), (hover:none) and (pointer:coarse)');
-  function jumpBehavior() { return (reduced.matches || noSmooth.matches) ? 'auto' : 'smooth'; }
-
-  /* Phones render one chapter at a time (see .poem-chapter CSS above). */
-  function activateChapter(el) {
-    if (!noSmooth.matches || !el) return;
-    var c = el.closest('.poem-chapter');
-    $$('.poem-chapter.is-current').forEach(function (x) { if (x !== c) x.classList.remove('is-current'); });
-    if (c) c.classList.add('is-current');
-  }
-  var allChapters = $$('.poem-chapter');
-  allChapters.forEach(function (c, i) {
-    var next = allChapters[i + 1];
-    var pager = document.createElement('div');
-    pager.className = 'ch-pager';
-    var nt = next && $('.cn-title', next);
-    pager.innerHTML = '<a href="#contents">\u2190 All poems</a>' +
-      (next ? '<a href="#' + next.id + '">Next poem \u2192</a>' : '');
-    c.appendChild(pager);
-  });
-  if (location.hash) {
-    var hashEl = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-    if (hashEl) {
-      activateChapter(hashEl);
-      hashEl.scrollIntoView({ behavior: 'auto', block: 'start' });
-      setTimeout(revealNow, 120);
-    }
-  }
-
   /* ---------------------------------------------------- anchor offset */
   document.addEventListener('click', function (e) {
     var a = e.target.closest('a[href^="#"]');
@@ -5357,9 +5393,7 @@ b.term{white-space:normal}
     var el = document.getElementById(id);
     if (!el) return;
     e.preventDefault();
-    activateChapter(el);
-    el.scrollIntoView({ behavior: jumpBehavior(), block: 'start' });
-    history.replaceState(null, '', '#' + id);
+    jumpTo(el);
     revealNow();
     setTimeout(revealNow, 420);
     setTimeout(revealNow, 900);
