@@ -38,6 +38,7 @@
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 html:not(.no-smooth){scroll-behavior:smooth}
+@media (max-width:900px),(hover:none) and (pointer:coarse){html:not(.no-smooth){scroll-behavior:auto}}
 body{
   margin:0;
   background:var(--bg);
@@ -821,6 +822,20 @@ b.term{white-space:normal}
   .cn-links{-webkit-mask-image:linear-gradient(90deg,#000 92%,transparent)}
   .poem-body .pline{transform:none}
   .pline.is-active,.poem-card.is-in .pline.is-active{transform:none}
+}
+
+/* ---------- phones: one chapter in the DOM flow at a time ----------
+   The full page is ~1,000,000px tall on a phone; jumping to a chapter froze
+   and crashed the tab. Only the open chapter is rendered. */
+@media (max-width:900px),(hover:none) and (pointer:coarse){
+  .poem-chapter{display:none}
+  .poem-chapter.is-current{display:block}
+  .ch-pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    padding:36px var(--pad) 72px;border-top:1px solid var(--hair-soft)}
+  .ch-pager a{color:var(--ink);text-decoration:none;font-family:var(--mono);font-size:.72rem;
+    letter-spacing:.14em;text-transform:uppercase;padding:14px 18px;border-radius:100px;
+    border:1px solid var(--hair-soft);background:var(--surface)}
+  .ch-pager a:last-child{border-color:var(--accent);color:var(--accent)}
 }
 </style>
 </head>
@@ -5252,7 +5267,8 @@ b.term{white-space:normal}
     if (!m) return;
     closePalette();
     var el = document.getElementById(m.id);
-    if (el) el.scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
+    activateChapter(el);
+    if (el) el.scrollIntoView({ behavior: jumpBehavior(), block: 'start' });
     if (m.kind === 'term' && gSearch) {
       gSearch.value = m.title;
       applyGlossary();
@@ -5301,6 +5317,37 @@ b.term{white-space:normal}
     if (off) $$('[data-reveal]').forEach(function (el) { el.classList.add('is-in'); });
   });
 
+  /* The page is hundreds of thousands of px tall; animating a scroll across it
+     freezes phones. Touch / small screens jump instantly instead. */
+  var noSmooth = window.matchMedia('(max-width:900px), (hover:none) and (pointer:coarse)');
+  function jumpBehavior() { return (reduced.matches || noSmooth.matches) ? 'auto' : 'smooth'; }
+
+  /* Phones render one chapter at a time (see .poem-chapter CSS above). */
+  function activateChapter(el) {
+    if (!noSmooth.matches || !el) return;
+    var c = el.closest('.poem-chapter');
+    $$('.poem-chapter.is-current').forEach(function (x) { if (x !== c) x.classList.remove('is-current'); });
+    if (c) c.classList.add('is-current');
+  }
+  var allChapters = $$('.poem-chapter');
+  allChapters.forEach(function (c, i) {
+    var next = allChapters[i + 1];
+    var pager = document.createElement('div');
+    pager.className = 'ch-pager';
+    var nt = next && $('.cn-title', next);
+    pager.innerHTML = '<a href="#contents">\u2190 All poems</a>' +
+      (next ? '<a href="#' + next.id + '">Next poem \u2192</a>' : '');
+    c.appendChild(pager);
+  });
+  if (location.hash) {
+    var hashEl = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (hashEl) {
+      activateChapter(hashEl);
+      hashEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+      setTimeout(revealNow, 120);
+    }
+  }
+
   /* ---------------------------------------------------- anchor offset */
   document.addEventListener('click', function (e) {
     var a = e.target.closest('a[href^="#"]');
@@ -5310,7 +5357,8 @@ b.term{white-space:normal}
     var el = document.getElementById(id);
     if (!el) return;
     e.preventDefault();
-    el.scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
+    activateChapter(el);
+    el.scrollIntoView({ behavior: jumpBehavior(), block: 'start' });
     history.replaceState(null, '', '#' + id);
     revealNow();
     setTimeout(revealNow, 420);
