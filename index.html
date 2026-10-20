@@ -801,6 +801,27 @@ body.no-motion .poem-body .pline{opacity:1;transform:none;transition-delay:0s !i
 .step-col,.note-col,.research,.ctx-card,.theme-card,.fact-card{overflow-wrap:anywhere}
 b.term{white-space:normal}
 
+
+/* ---------- mobile / touch: drop the effects that make phones stutter ---------- */
+@media (max-width:900px),(hover:none) and (pointer:coarse){
+  html{-webkit-text-size-adjust:100%;overflow-x:hidden}
+  body{overflow-x:clip}
+  .grain{display:none}
+  .hero-aurora{filter:blur(40px);opacity:.4}
+  .hero-aurora i{mix-blend-mode:normal}
+  .cover-bg::before{filter:none;transform:none;opacity:.7}
+  .cover-glyph{transform:none;translate:0 -50%;right:-8vw;font-size:min(40vh,70vw)}
+  [data-reveal]{filter:none;transform:translateY(14px);transition:opacity .5s ease,transform .6s var(--ease)}
+  [data-reveal].is-in{transform:none}
+  .mask>span{transition:transform .7s var(--ease),opacity .5s ease}
+  .chapter-cover{min-height:auto;padding-block:clamp(72px,12vh,110px)}
+  .chapter-nav,.motion-toggle{-webkit-backdrop-filter:none;backdrop-filter:none}
+  .chapter-nav{background:rgba(11,10,14,.96)}
+  .motion-toggle{bottom:calc(14px + env(safe-area-inset-bottom));background:rgba(14,13,19,.95)}
+  .cn-links{-webkit-mask-image:linear-gradient(90deg,#000 92%,transparent)}
+  .poem-body .pline{transform:none}
+  .pline.is-active,.poem-card.is-in .pline.is-active{transform:none}
+}
 </style>
 </head>
 <body>
