@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
 <title>Poetry 0475 — Study Companion</title>
 <meta name="description" content="A close-reading companion to all fifteen set poems: context, line-by-line analysis, form, sound, themes, rival readings and connections.">
 <style>/* ============================================================
@@ -108,12 +109,9 @@ a{color:inherit}
   background:radial-gradient(circle,#2c5566,transparent 66%);animation:drift2 32s var(--ease-io) infinite alternate}
 .hero-aurora i:nth-child(3){width:40vw;height:40vw;left:32%;bottom:2%;
   background:radial-gradient(circle,#6b5220,transparent 68%);animation:drift3 29s var(--ease-io) infinite alternate}
-.hero-aurora i:nth-child(4){width:44vw;height:44vw;right:16%;bottom:-6%;
-  background:radial-gradient(circle,#7a3b6e,transparent 66%);animation:drift4 24s var(--ease-io) infinite alternate}
 @keyframes drift1{to{transform:translate(14vw,10vh) scale(1.22)}}
 @keyframes drift2{to{transform:translate(-12vw,8vh) scale(1.14)}}
 @keyframes drift3{to{transform:translate(6vw,-12vh) scale(1.26)}}
-@keyframes drift4{to{transform:translate(-10vw,-9vh) scale(1.18)}}
 
 .hero-inner{position:relative;max-width:1000px}
 .hero-kicker{font-family:var(--mono);font-size:.72rem;letter-spacing:.34em;text-transform:uppercase;
@@ -1022,21 +1020,6 @@ body.is-locked .mbar{opacity:0;pointer-events:none}
   .toc-thesis,.toc-tags,.toc-go,.toc-glyph{display:none}
   .toc-top{margin-bottom:1px}
   .lede{font-size:.95rem}
-  /* richer colour + movement on the title page */
-  .hero::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
-    background:radial-gradient(75% 55% at 50% 34%,rgba(224,71,91,.16),transparent 72%),
-      radial-gradient(55% 45% at 68% 72%,rgba(79,168,189,.12),transparent 72%),
-      radial-gradient(60% 50% at 22% 68%,rgba(230,161,60,.10),transparent 72%)}
-  .hero-aurora{opacity:1;filter:blur(44px)}
-  .hero-aurora i:nth-child(1){animation-duration:19s;
-    background:radial-gradient(circle,#c94e63,transparent 70%)}
-  .hero-aurora i:nth-child(2){animation-duration:24s;
-    background:radial-gradient(circle,#3d82a0,transparent 70%)}
-  .hero-aurora i:nth-child(3){animation-duration:16s;
-    background:radial-gradient(circle,#b0842f,transparent 70%)}
-  .hero-aurora i:nth-child(4){animation-duration:21s;
-    background:radial-gradient(circle,#ad5395,transparent 70%)}
-  .hero-em{animation-duration:9s}
   .xview{width:calc(100vw - 20px);max-height:88dvh}
   .xview-body{max-height:calc(88dvh - 130px);padding-bottom:calc(24px + env(safe-area-inset-bottom))}
 }
@@ -1049,6 +1032,131 @@ body.is-locked .mbar{opacity:0;pointer-events:none}
   .note-card.x-card .note-col + .note-col{display:block}
   .note-card.x-card .note-cols{display:grid}
 }
+
+/* ============================================================
+   LIGHT THEME
+   The app is dark by default; this block re-tunes it for readers
+   whose browser asks for light. Not an inversion: a warm-paper
+   palette with its own contrast curve, shadows and glass tints.
+   ============================================================ */
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f7f5f0;
+    --bg-2:#efede5;
+    --surface:rgba(255,255,255,.62);
+    --surface-2:rgba(255,255,255,.88);
+    --hair:rgba(38,32,20,.16);
+    --hair-soft:rgba(38,32,20,.09);
+    --ink:#26231c;
+    --ink-2:#5b5548;
+    --ink-3:#6f6754;
+    --accent:#8a6a38;
+    --accent-2:#c9b489;
+  }
+
+  ::selection{color:#26231c}
+  .grain{opacity:.09}
+
+  /* hero: same drift, colours re-tuned for paper */
+  .hero-aurora{opacity:.5}
+  .hero-aurora i{mix-blend-mode:multiply}
+  .hero-aurora i:nth-child(1){background:radial-gradient(circle,#e9c6cd,transparent 66%)}
+  .hero-aurora i:nth-child(2){background:radial-gradient(circle,#c3d6de,transparent 66%)}
+  .hero-aurora i:nth-child(3){background:radial-gradient(circle,#e6d7b5,transparent 68%)}
+  .hero-em{
+    background:linear-gradient(96deg,#3e3524 0%,#a83849 32%,#a3651c 55%,#2a7590 78%,#3e3524 100%);
+    background-size:280% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+
+  /* buttons & controls */
+  .btn-primary{color:#f7f5f0}
+  .btn-primary:hover{background:#000;color:#fff}
+  kbd{background:rgba(38,32,20,.06)}
+  .qb-search,.g-search,.palette-input{background:rgba(38,32,20,.05)}
+  .qb-search:focus,.g-search:focus,.palette-input:focus{background:rgba(255,255,255,.92)}
+
+  /* glass chrome: rail, chapter nav, mobile bar, sheets */
+  .rail{background:rgba(252,250,245,.72)}
+  .rail-label{background:rgba(252,250,245,.95)}
+  .chapter-nav{background:rgba(247,245,240,.86)}
+  .motion-toggle{background:rgba(252,250,245,.8)}
+  .mbar{background:rgba(252,250,245,.78);box-shadow:0 12px 40px -18px rgba(60,45,15,.3)}
+  .mbar-btn:active{background:rgba(38,32,20,.07)}
+  .msheet{background:rgba(247,245,240,.985)}
+  .msheet::backdrop{background:rgba(40,34,22,.35)}
+  .ms-poem:active{background:rgba(38,32,20,.05)}
+
+  /* cards: inked heads become faint washes */
+  .poem-card{box-shadow:0 30px 80px -50px rgba(60,45,15,.35)}
+  .poem-card-head{background:rgba(38,32,20,.045)}
+  .note-card header{background:rgba(38,32,20,.035)}
+  .poem-gist-note{background:rgba(38,32,20,.03)}
+  .text-panel{background:rgba(38,32,20,.04)}
+  .text-panel textarea{background:#fffdf8}
+  .tablewrap th{background:rgba(38,32,20,.045)}
+  .cmp thead th{background:rgba(247,245,240,.96)}
+  .cmp tbody th{background:rgba(38,32,20,.045)}
+  [data-sub="editorial"] .research{
+    background:linear-gradient(160deg,rgba(138,106,56,.06),rgba(255,255,255,.4));
+  }
+  .th-card:hover{border-color:rgba(38,32,20,.22)}
+
+  /* poem lines */
+  .pline.has-note:hover{background:rgba(38,32,20,.04)}
+  .pline.is-active,.poem-card.is-in .pline.is-active{color:var(--ink)}
+
+  /* code, prose, tags */
+  .prose code{background:rgba(38,32,20,.055)}
+  .th-poem b{color:color-mix(in srgb,var(--accent) 72%,#26231c)}
+  .ix-tag{color:color-mix(in srgb,var(--accent) 74%,#26231c)}
+  .g-seen{color:color-mix(in srgb,var(--accent) 76%,#26231c)}
+
+  /* overlays: light scrims, softer shadows */
+  .palette-scrim{background:rgba(40,34,22,.4)}
+  .palette-box{background:rgba(252,250,245,.97);box-shadow:0 40px 120px -30px rgba(60,45,15,.3)}
+  .focus-scrim{background:rgba(40,34,22,.35)}
+  .xview{box-shadow:0 40px 120px -40px rgba(60,45,15,.35)}
+  .xview::backdrop{background:rgba(40,34,22,.4)}
+
+  /* chapter cover washes are gentler on paper */
+  .cover-bg::before{opacity:.55}
+
+  html{scrollbar-color:#c8c2b4 transparent}
+  ::-webkit-scrollbar-thumb{background:#c8c2b4}
+  ::-webkit-scrollbar-thumb:hover{background:#b0a998}
+
+  /* readability: chapter accents are tuned for dark; darken them slightly
+     wherever they carry text on paper (dots, bars and borders keep the hue) */
+  .eyebrow,.sub-eyebrow,.toc-num,.toc-go,.cover-num span:first-child,.cover-thesis em,
+  .cn-num,.step-line,.note-line,.fact-card h4,.prose h3,.prose a,.g-family h3,
+  .g-forms,.ix-meta b,.prose li::marker,.how li::before,
+  .pline.is-active .ln,.pline-title .ln,
+  .rail-label b,.cmp thead th b,.cmp-rows th.cmp-poem a,
+  .mini-btn:hover,.ce-link i,.foot-nav a:hover{
+    color:color-mix(in oklch,var(--accent) 46%,#26231c);
+  }
+  /* decorative marks keep the hue, just grounded a touch */
+  .toc-card::after,.rail-dot,.scroll-cue i,.cover-num i,.ctx-card h4::after,
+  .fact-card::after,.step-quote,.note-line,.note-col li::marker,.term,.ce-next{
+    border-color:color-mix(in oklch,var(--accent) 55%,transparent);
+  }
+  .toc-card::after,.rail-dot,.scroll-cue i,.cover-num i,.ctx-card h4::after,
+  .fact-card::after{
+    background:color-mix(in oklch,var(--accent) 70%,#26231c);
+  }
+  .term{
+    color:color-mix(in oklch,var(--accent) 46%,#26231c);
+    background:color-mix(in oklch,var(--accent) 14%,transparent);
+    border-color:color-mix(in oklch,var(--accent) 28%,transparent);
+  }
+
+  /* editorial gold is unreadable on paper */
+  .flag{color:#8a6a2f;border-color:rgba(138,106,47,.4);background:rgba(138,106,47,.08)}
+  [data-sub="editorial"] .research h3{color:#8a6a2f}
+  [data-sub="editorial"] .sub-eyebrow{color:#8a6a2f}
+  [data-sub="editorial"] .research li::marker{color:rgba(138,106,47,.7)}
+}
 </style>
 </head>
 <body>
@@ -1060,7 +1168,7 @@ body.is-locked .mbar{opacity:0;pointer-events:none}
 
 <!-- ============================= HERO ============================= -->
 <header class="hero" id="top">
-<div aria-hidden="true" class="hero-aurora"><i></i><i></i><i></i><i></i></div>
+<div aria-hidden="true" class="hero-aurora"><i></i><i></i><i></i></div>
 <div class="hero-inner">
 <p class="hero-kicker"><span class="mask"><span>Literature in English  ·  0475  ·  Paper 26</span></span></p>
 <h1 class="hero-title">
